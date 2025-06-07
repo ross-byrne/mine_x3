@@ -66,9 +66,18 @@ fn update_animation_movement(
 }
 
 /// Update the animation timer.
-fn update_animation_timer(time: Res<Time>, mut query: Query<&mut PlayerAnimation>) {
+fn update_animation_timer(
+    time: Res<Time>,
+    mut query: Query<&mut PlayerAnimation>,
+    mut animation_timers: Query<&mut AnimationTimer>,
+) {
     for mut animation in &mut query {
         animation.update_timer(time.delta());
+    }
+
+    // Update player animation timers
+    for mut timer in &mut animation_timers {
+        timer.tick(time.delta());
     }
 }
 
@@ -205,14 +214,10 @@ impl AnimationTimer {
 
 // Execute playing animations only
 fn execute_animations(
-    time: Res<Time>,
-    mut query: Query<(&AnimationIndices, &mut AnimationTimer, &mut Sprite), With<AnimationPlaying>>,
+    mut query: Query<(&AnimationIndices, &AnimationTimer, &mut Sprite), With<AnimationPlaying>>,
 ) {
-    for (animation_indices, mut animation_timer, mut sprite) in &mut query {
+    for (animation_indices, animation_timer, mut sprite) in &mut query {
         if let Some(atlas) = &mut sprite.texture_atlas {
-            // we track how long the current sprite has been displayed for
-            animation_timer.tick(time.delta());
-
             // If it has been displayed for the user-defined amount of time (fps)
             if animation_timer.just_finished() {
                 if atlas.index == animation_indices.last {
