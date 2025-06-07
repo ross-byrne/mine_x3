@@ -40,7 +40,8 @@ pub(super) fn plugin(app: &mut App) {
                 start_animation::<PlayerShipEngineEffect>.run_if(input_just_pressed(KeyCode::KeyW)),
                 stop_animation::<PlayerShipEngineEffect>.run_if(input_just_released(KeyCode::KeyW)),
             )
-                .chain(),
+                .chain()
+                .in_set(AppSystems::Update),
         )
             .in_set(PausableSystems),
     );
