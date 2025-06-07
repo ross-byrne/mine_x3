@@ -181,9 +181,16 @@ pub fn fighter_ship(
 
     (
         Name::new("Nairan Fighter"),
+        Player,
+        MovementController {
+            max_speed: SHIP_SPEED,
+            ..default()
+        },
+        ScreenWrap,
         ShipSpeed(SHIP_SPEED),
         Collider::capsule(8.0, 12.0),
-        Transform::from_xyz(0.0, 0.0, 10.0).with_scale(Vec3::splat(1.6)),
+        // Transform::from_xyz(0.0, 0.0, 10.0).with_scale(Vec3::splat(1.6)),
+        Transform::from_scale(Vec2::splat(1.6).extend(1.0)),
         children![
             (
                 Sprite::from_image(ship_assets.fighter_base.clone()),
