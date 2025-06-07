@@ -10,7 +10,7 @@ use crate::{
     AppSystems, PausableSystems,
     asset_tracking::LoadResource,
     demo::{
-        animation::PlayerAnimation,
+        animation::{AnimationIndices, AnimationTimer, PlayerAnimation},
         movement::{MovementController, ScreenWrap},
     },
 };
@@ -20,19 +20,19 @@ const ROTATION_SPEED: f32 = 240.0;
 const POWERED_ANIMATION_INDICES: AnimationIndices = AnimationIndices { first: 0, last: 7 };
 
 #[derive(Component)]
-pub struct ShipSpeed(pub f32);
+pub struct PlayerShipEngineEffect;
 
 #[derive(Component)]
-struct AnimationIndices {
-    first: usize,
-    last: usize,
-}
+pub struct ShipSpeed(pub f32);
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<Player>();
 
     app.register_type::<PlayerAssets>();
     app.load_resource::<PlayerAssets>();
+
+    app.register_type::<ShipAssets>();
+    app.load_resource::<ShipAssets>();
 
     // Record directional input as movement controls.
     app.add_systems(
@@ -153,14 +153,14 @@ impl FromWorld for ShipAssets {
         let assets = world.resource::<AssetServer>();
         Self {
             fighter_base: assets.load_with_settings(
-                "placeholder/ships/nairan/base/Fighter - Base.png",
+                "images/Fighter - Base.png",
                 |settings: &mut ImageLoaderSettings| {
                     // Use `nearest` image sampling to preserve pixel art style.
                     settings.sampler = ImageSampler::nearest();
                 },
             ),
             fighter_engine_effect_sheet: assets.load_with_settings(
-                "placeholder/ships/nairan/engine_effects/Fighter - Engine.png",
+                "images/Fighter - Engine.png",
                 |settings: &mut ImageLoaderSettings| {
                     // Use `nearest` image sampling to preserve pixel art style.
                     settings.sampler = ImageSampler::nearest();
@@ -170,41 +170,40 @@ impl FromWorld for ShipAssets {
     }
 }
 
-// pub fn nairan_fighter_ship(
-//     ship_assets: &Res<ShipAssets>,
-//     texture_atlas_layouts: &mut Assets<TextureAtlasLayout>,
-// ) -> impl Bundle {
-//     // A texture atlas is a way to split a single image into a grid of related images.
-//     // You can learn more in this example: https://github.com/bevyengine/bevy/blob/latest/examples/2d/texture_atlas.rs
-//     let layout = TextureAtlasLayout::from_grid(UVec2::splat(64), 8, 1, None, None);
-//     let texture_atlas_layout = texture_atlas_layouts.add(layout);
+pub fn fighter_ship(
+    ship_assets: &Res<ShipAssets>,
+    texture_atlas_layouts: &mut Assets<TextureAtlasLayout>,
+) -> impl Bundle {
+    // A texture atlas is a way to split a single image into a grid of related images.
+    // You can learn more in this example: https://github.com/bevyengine/bevy/blob/latest/examples/2d/texture_atlas.rs
+    let layout = TextureAtlasLayout::from_grid(UVec2::splat(64), 8, 1, None, None);
+    let texture_atlas_layout = texture_atlas_layouts.add(layout);
 
-//     (
-//         Name::new("Nairan Fighter"),
-//         ShipSpeed(SHIP_SPEED),
-//         Collider::capsule(8.0, 12.0),
-//         Transform::from_xyz(0.0, 0.0, 10.0).with_scale(Vec3::splat(1.6)),
-//         children![
-//             (
-//                 NairanFighterBase,
-//                 Sprite::from_image(ship_assets.fighter_base.clone()),
-//                 Transform::from_xyz(0.0, 0.0, 2.0),
-//             ),
-//             (
-//                 NairanFighterEngineEffect,
-//                 Sprite {
-//                     image: ship_assets.fighter_engine_effect_sheet.clone(),
-//                     texture_atlas: Some(TextureAtlas {
-//                         layout: texture_atlas_layout,
-//                         index: 0,
-//                     }),
-//                     ..default()
-//                 },
-//                 Transform::from_xyz(0.0, -0.3, 0.0),
-//                 Visibility::Hidden, // will show effect later
-//                 POWERED_ANIMATION_INDICES,
-//                 AnimationTimer::with_fps(12.0),
-//             ),
-//         ],
-//     )
-// }
+    (
+        Name::new("Nairan Fighter"),
+        ShipSpeed(SHIP_SPEED),
+        Collider::capsule(8.0, 12.0),
+        Transform::from_xyz(0.0, 0.0, 10.0).with_scale(Vec3::splat(1.6)),
+        children![
+            (
+                Sprite::from_image(ship_assets.fighter_base.clone()),
+                Transform::from_xyz(0.0, 0.0, 2.0),
+            ),
+            (
+                PlayerShipEngineEffect,
+                Sprite {
+                    image: ship_assets.fighter_engine_effect_sheet.clone(),
+                    texture_atlas: Some(TextureAtlas {
+                        layout: texture_atlas_layout,
+                        index: 0,
+                    }),
+                    ..default()
+                },
+                Transform::from_xyz(0.0, -0.3, 0.0),
+                Visibility::Hidden, // will show effect later
+                POWERED_ANIMATION_INDICES,
+                AnimationTimer::with_fps(12.0),
+            ),
+        ],
+    )
+}

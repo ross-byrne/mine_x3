@@ -4,14 +4,20 @@
 //! - [Sprite animation](https://github.com/bevyengine/bevy/blob/latest/examples/2d/sprite_animation.rs)
 //! - [Timers](https://github.com/bevyengine/bevy/blob/latest/examples/time/timers.rs)
 
-use bevy::prelude::*;
+use bevy::{
+    input::common_conditions::{input_just_pressed, input_just_released},
+    prelude::*,
+};
 use rand::prelude::*;
 use std::time::Duration;
 
 use crate::{
     AppSystems, PausableSystems,
     audio::sound_effect,
-    demo::{movement::MovementController, player::PlayerAssets},
+    demo::{
+        movement::MovementController,
+        player::{PlayerAssets, PlayerShipEngineEffect},
+    },
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -25,10 +31,16 @@ pub(super) fn plugin(app: &mut App) {
                 update_animation_movement,
                 update_animation_atlas,
                 trigger_step_sound_effect,
+                execute_animations,
             )
                 .chain()
                 .run_if(resource_exists::<PlayerAssets>)
                 .in_set(AppSystems::Update),
+            (
+                start_animation::<PlayerShipEngineEffect>.run_if(input_just_pressed(KeyCode::KeyW)),
+                stop_animation::<PlayerShipEngineEffect>.run_if(input_just_released(KeyCode::KeyW)),
+            )
+                .chain(),
         )
             .in_set(PausableSystems),
     );
@@ -171,5 +183,78 @@ impl PlayerAnimation {
             PlayerAnimationState::Idling => self.frame,
             PlayerAnimationState::Walking => 6 + self.frame,
         }
+    }
+}
+
+#[derive(Component)]
+struct AnimationPlaying;
+
+#[derive(Component)]
+pub struct AnimationIndices {
+    pub first: usize,
+    pub last: usize,
+}
+
+#[derive(Component, Deref, DerefMut)]
+pub struct AnimationTimer(pub Timer);
+impl AnimationTimer {
+    pub fn with_fps(fps: f32) -> Self {
+        Self(Timer::from_seconds(1.0 / fps, TimerMode::Repeating))
+    }
+}
+
+// Execute playing animations only
+fn execute_animations(
+    time: Res<Time>,
+    mut query: Query<(&AnimationIndices, &mut AnimationTimer, &mut Sprite), With<AnimationPlaying>>,
+) {
+    for (animation_indices, mut animation_timer, mut sprite) in &mut query {
+        if let Some(atlas) = &mut sprite.texture_atlas {
+            // we track how long the current sprite has been displayed for
+            animation_timer.tick(time.delta());
+
+            // If it has been displayed for the user-defined amount of time (fps)
+            if animation_timer.just_finished() {
+                if atlas.index == animation_indices.last {
+                    // if last frame, reset to first
+                    atlas.index = animation_indices.first;
+                } else {
+                    // otherwise, progress to next frame
+                    atlas.index += 1;
+                }
+            }
+        }
+    }
+}
+
+fn start_animation<T: Component>(
+    mut commands: Commands,
+    mut query: Query<
+        (Entity, &mut Sprite, &mut AnimationTimer, &AnimationIndices),
+        (With<T>, Without<AnimationPlaying>),
+    >,
+) {
+    for (entity, mut sprite, mut animation_timer, animation_indices) in query.iter_mut() {
+        if let Some(atlas) = &mut sprite.texture_atlas {
+            // reset first animation frame
+            atlas.index = animation_indices.first;
+            animation_timer.reset();
+
+            commands
+                .entity(entity)
+                .insert((Visibility::Visible, AnimationPlaying));
+        }
+    }
+}
+
+fn stop_animation<T: Component>(
+    mut commands: Commands,
+    query: Query<Entity, (With<T>, With<AnimationPlaying>)>,
+) {
+    for entity in query.iter() {
+        commands
+            .entity(entity)
+            .remove::<AnimationPlaying>()
+            .insert(Visibility::Hidden);
     }
 }
