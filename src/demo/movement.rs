@@ -149,6 +149,12 @@ fn apply_player_rotation(
         return; // cursor not in primary window
     };
 
+    // Check how close cursor is to player
+    let distance = cursor_translation.distance(player_transform.translation.xy());
+    if distance <= 50.0 {
+        return; // Player too close to cursor
+    }
+
     // Get the player ship forward vector in 2D (already unit length)
     let player_forward = (player_transform.rotation * Vec3::Y).xy();
 
