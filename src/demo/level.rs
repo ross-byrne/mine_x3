@@ -5,7 +5,7 @@ use bevy::prelude::*;
 use crate::{
     asset_tracking::LoadResource,
     audio::music,
-    demo::player::{PlayerAssets, ShipAssets, fighter_ship, player},
+    demo::player::{PlayerAssets, ShipAssets, fighter_ship},
     screens::Screen,
 };
 
