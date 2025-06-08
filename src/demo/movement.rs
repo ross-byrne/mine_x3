@@ -23,7 +23,7 @@ pub(super) fn plugin(app: &mut App) {
 
     app.add_systems(
         Update,
-        (apply_movement, update_player_rotation, apply_screen_wrap)
+        (apply_movement, apply_player_rotation, apply_screen_wrap)
             .chain()
             .in_set(AppSystems::Update)
             .in_set(PausableSystems),
@@ -65,7 +65,7 @@ fn apply_movement(
 }
 
 /// Rotate player towards cursor
-fn update_player_rotation(
+fn apply_player_rotation(
     time: Res<Time>,
     cursor_position: CursorPositionQuery,
     mut player_transform: Single<&mut Transform, With<Player>>,
