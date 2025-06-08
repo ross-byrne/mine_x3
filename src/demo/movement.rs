@@ -141,9 +141,15 @@ fn apply_player_movement(
 /// Rotate player towards cursor
 fn apply_player_rotation(
     time: Res<Time>,
+    input: Res<ButtonInput<MouseButton>>,
     cursor_position: CursorPositionQuery,
     mut player_transform: Single<&mut Transform, With<Player>>,
 ) {
+    // Only rotate towards cursor while holding button
+    if !input.pressed(MouseButton::Right) {
+        return;
+    }
+
     // Get the cursor translation in 2D
     let Ok(cursor_translation) = cursor_position.get_world_position() else {
         return; // cursor not in primary window
