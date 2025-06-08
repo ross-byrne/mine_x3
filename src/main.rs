@@ -78,6 +78,10 @@ impl Plugin for AppPlugin {
 
         // Spawn the main camera.
         app.add_systems(Startup, spawn_camera);
+
+        // add physics pause systems
+        app.add_systems(OnEnter(Pause(true)), pause_physics);
+        app.add_systems(OnEnter(Pause(false)), unpause_physics);
     }
 }
 
@@ -105,4 +109,14 @@ struct PausableSystems;
 
 fn spawn_camera(mut commands: Commands) {
     commands.spawn((Name::new("Camera"), Camera2d));
+}
+
+/// Pauses the phsyics engine
+fn pause_physics(mut time: ResMut<Time<Physics>>) {
+    time.pause();
+}
+
+/// Unpauses the physics engine
+fn unpause_physics(mut time: ResMut<Time<Physics>>) {
+    time.unpause();
 }
