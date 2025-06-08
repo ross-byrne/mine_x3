@@ -14,6 +14,7 @@
 //! consider using a [fixed timestep](https://github.com/bevyengine/bevy/blob/main/examples/movement/physics_in_fixed_timestep.rs).
 
 use crate::{AppSystems, PausableSystems, camera::CursorPositionQuery, demo::player::Player};
+use avian2d::prelude::*;
 use bevy::{prelude::*, window::PrimaryWindow};
 
 pub(super) fn plugin(app: &mut App) {
@@ -22,7 +23,11 @@ pub(super) fn plugin(app: &mut App) {
 
     app.add_systems(
         Update,
-        (apply_movement, apply_player_rotation, apply_screen_wrap)
+        (
+            apply_player_movement,
+            apply_player_rotation,
+            apply_screen_wrap,
+        )
             .chain()
             .in_set(AppSystems::Update)
             .in_set(PausableSystems),
@@ -63,13 +68,73 @@ pub struct ShipSpeed(pub f32);
 #[derive(Component, Debug)]
 pub struct RotationSpeed(pub f32);
 
-fn apply_movement(
+// TODO: update player movement to be closer to this
+fn _apply_movement(
     time: Res<Time>,
     mut movement_query: Query<(&MovementController, &mut Transform)>,
 ) {
     for (controller, mut transform) in &mut movement_query {
         let velocity = controller.max_speed * controller.intent;
         transform.translation += velocity.extend(0.0) * time.delta_secs();
+    }
+}
+
+/// Applies movement to player. TODO: use movement controller here
+fn apply_player_movement(
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    mut query: Query<
+        (
+            &MovementController,
+            &Transform,
+            &mut LinearVelocity,
+            &mut AngularVelocity,
+            &ShipSpeed,
+            &RotationSpeed,
+        ),
+        With<Player>,
+    >,
+) {
+    for (
+        controller,
+        transform,
+        mut linear_velocity,
+        mut angular_velocity,
+        ship_speed,
+        rotation_speed,
+    ) in query.iter_mut()
+    {
+        let mut default_rotation_factor = 0.0;
+        let mut movement_factor = 0.0;
+
+        // let velocity = controller.max_speed * controller.intent;
+
+        // if keyboard_input.pressed(KeyCode::KeyA) {
+        //     default_rotation_factor += rotation_speed.0;
+        // }
+
+        // if keyboard_input.pressed(KeyCode::KeyD) {
+        //     default_rotation_factor -= rotation_speed.0;
+        // }
+
+        if keyboard_input.pressed(KeyCode::KeyW) {
+            movement_factor += 1.0;
+        }
+
+        // set rotation factor
+        // angular_velocity.0 = default_rotation_factor;
+
+        // get the ship's forward vector by applying the current rotation to the ships initial facing
+        // vector
+        let movement_direction = transform.rotation * Vec3::Y;
+        // get the distance the ship will move based on direction, the ship's movement speed and delta
+        // time
+        let movement_distance = movement_factor * ship_speed.0;
+        // create the change in translation using the new movement direction and distance
+        let translation_delta = movement_direction * movement_distance;
+
+        // update the ship translation with our new translation delta
+        linear_velocity.x = translation_delta.x;
+        linear_velocity.y = translation_delta.y;
     }
 }
 
@@ -126,6 +191,7 @@ fn apply_player_rotation(
     player_transform.rotate_z(rotation_angle);
 }
 
+/// Wrap objects when they go off screen
 fn apply_screen_wrap(
     window: Single<&Window, With<PrimaryWindow>>,
     mut wrap_query: Query<&mut Transform, With<ScreenWrap>>,

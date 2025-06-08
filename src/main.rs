@@ -13,6 +13,7 @@ mod menus;
 mod screens;
 mod theme;
 
+use avian2d::prelude::*;
 use bevy::{asset::AssetMetaCheck, prelude::*};
 
 fn main() -> AppExit {
@@ -55,6 +56,10 @@ impl Plugin for AppPlugin {
             screens::plugin,
             theme::plugin,
         ));
+
+        // Add physics plugins and specify a units-per-meter scaling factor, 1 meter = 64 pixels.
+        // The unit allows the engine to tune its parameters for the scale of the world, improving stability.
+        app.add_plugins(PhysicsPlugins::default().with_length_unit(64.0));
 
         // Order new `AppSystems` variants by adding them here:
         app.configure_sets(
