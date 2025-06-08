@@ -113,6 +113,12 @@ fn trigger_step_sound_effect(
     }
 }
 
+#[derive(Reflect, PartialEq)]
+pub enum PlayerAnimationState {
+    Idling,
+    Walking,
+}
+
 /// Component that tracks player's animation state.
 /// It is tightly bound to the texture atlas we use.
 #[derive(Component, Reflect)]
@@ -121,12 +127,6 @@ pub struct PlayerAnimation {
     timer: Timer,
     frame: usize,
     state: PlayerAnimationState,
-}
-
-#[derive(Reflect, PartialEq)]
-pub enum PlayerAnimationState {
-    Idling,
-    Walking,
 }
 
 impl PlayerAnimation {

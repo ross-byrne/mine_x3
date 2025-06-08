@@ -15,7 +15,7 @@
 
 use bevy::{prelude::*, window::PrimaryWindow};
 
-use crate::{AppSystems, PausableSystems};
+use crate::{AppSystems, PausableSystems, camera::CursorPositionQuery, demo::player::Player};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<MovementController>();
@@ -23,7 +23,7 @@ pub(super) fn plugin(app: &mut App) {
 
     app.add_systems(
         Update,
-        (apply_movement, apply_screen_wrap)
+        (apply_movement, update_player_rotation, apply_screen_wrap)
             .chain()
             .in_set(AppSystems::Update)
             .in_set(PausableSystems),
@@ -62,6 +62,62 @@ fn apply_movement(
         let velocity = controller.max_speed * controller.intent;
         transform.translation += velocity.extend(0.0) * time.delta_secs();
     }
+}
+
+/// Rotate player towards cursor
+fn update_player_rotation(
+    time: Res<Time>,
+    cursor_position: CursorPositionQuery,
+    mut player_transform: Single<&mut Transform, With<Player>>,
+) {
+    // Get the cursor translation in 2D
+    let Ok(cursor_position) = cursor_position.get_world_position() else {
+        return; // cursor not in primary window
+    };
+
+    // let mut player_translation = player_transform.translation.xy();
+
+    // Get the player ship forward vector in 2D (already unit length)
+    let player_forward = (player_transform.rotation * Vec3::Y).xy();
+
+    // Get the vector from the player ship to the player ship in 2D and normalize it.
+    let to_cursor = (cursor_position - player_transform.translation.xy()).normalize();
+
+    // Get the dot product between the player forward vector and the direction to the player.
+    let forward_dot_cursor = player_forward.dot(to_cursor);
+
+    // If the dot product is approximately 1.0 then the player is already facing the player and
+    // we can early out.
+    if (forward_dot_cursor - 1.0).abs() < f32::EPSILON {
+        return;
+    }
+
+    // Get the right vector of the player ship in 2D (already unit length)
+    let player_right = (player_transform.rotation * Vec3::X).xy();
+
+    // Get the dot product of the player right vector and the direction to the player ship.
+    // If the dot product is negative them we need to rotate counter clockwise, if it is
+    // positive we need to rotate clockwise. Note that `copysign` will still return 1.0 if the
+    // dot product is 0.0 (because the player is directly behind the player, so perpendicular
+    // with the right vector).
+    let right_dot_player = player_right.dot(to_cursor);
+
+    // Determine the sign of rotation from the right dot player. We need to negate the sign
+    // here as the 2D bevy co-ordinate system rotates around +Z, which is pointing out of the
+    // screen. Due to the right hand rule, positive rotation around +Z is counter clockwise and
+    // negative is clockwise.
+    let rotation_sign = -f32::copysign(1.0, right_dot_player);
+
+    // Limit rotation so we don't overshoot the target. We need to convert our dot product to
+    // an angle here so we can get an angle of rotation to clamp against.
+    let max_angle = ops::acos(forward_dot_cursor.clamp(-1.0, 1.0)); // Clamp acos for safety
+
+    // Calculate angle of rotation with limit
+    let rotation_speed = f32::to_radians(360.0);
+    let rotation_angle = rotation_sign * (rotation_speed * time.delta_secs()).min(max_angle);
+
+    // Rotate the player to face the cursor
+    player_transform.rotate_z(rotation_angle);
 }
 
 #[derive(Component, Reflect)]

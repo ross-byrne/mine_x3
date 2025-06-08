@@ -19,6 +19,10 @@ const SHIP_SPEED: f32 = 320.0;
 const ROTATION_SPEED: f32 = 240.0;
 const POWERED_ANIMATION_INDICES: AnimationIndices = AnimationIndices { first: 0, last: 7 };
 
+#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
+#[reflect(Component)]
+pub struct Player;
+
 #[derive(Component)]
 pub struct PlayerShipEngineEffect;
 
@@ -75,10 +79,6 @@ pub fn player(
         player_animation,
     )
 }
-
-#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
-#[reflect(Component)]
-struct Player;
 
 fn record_player_directional_input(
     input: Res<ButtonInput<KeyCode>>,
