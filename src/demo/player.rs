@@ -1,33 +1,89 @@
 //! Player-specific behavior.
 
+use crate::{
+    AppSystems, PausableSystems,
+    asset_tracking::LoadResource,
+    demo::{
+        animation::{AnimationIndices, AnimationTimer, PlayerAnimation},
+        movement::{MovementController, RotationSpeed, ScreenWrap, ShipSpeed},
+    },
+};
 use avian2d::prelude::*;
 use bevy::{
     image::{ImageLoaderSettings, ImageSampler},
     prelude::*,
 };
 
-use crate::{
-    AppSystems, PausableSystems,
-    asset_tracking::LoadResource,
-    demo::{
-        animation::{AnimationIndices, AnimationTimer, PlayerAnimation},
-        movement::{MovementController, ScreenWrap},
-    },
-};
-
 const SHIP_SPEED: f32 = 320.0;
-const ROTATION_SPEED: f32 = 240.0;
+const ROTATION_SPEED: f32 = 360.0;
 const POWERED_ANIMATION_INDICES: AnimationIndices = AnimationIndices { first: 0, last: 7 };
 
 #[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Default, Reflect)]
 #[reflect(Component)]
+#[require(Visibility, RigidBody::Kinematic, Sensor)]
 pub struct Player;
 
 #[derive(Component)]
 pub struct PlayerShipEngineEffect;
 
-#[derive(Component)]
-pub struct ShipSpeed(pub f32);
+#[derive(Resource, Asset, Clone, Reflect)]
+#[reflect(Resource)]
+pub struct PlayerAssets {
+    #[dependency]
+    ducky: Handle<Image>,
+    #[dependency]
+    pub steps: Vec<Handle<AudioSource>>,
+}
+impl FromWorld for PlayerAssets {
+    fn from_world(world: &mut World) -> Self {
+        let assets = world.resource::<AssetServer>();
+        Self {
+            ducky: assets.load_with_settings(
+                "images/ducky.png",
+                |settings: &mut ImageLoaderSettings| {
+                    // Use `nearest` image sampling to preserve pixel art style.
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
+            steps: vec![
+                assets.load("audio/sound_effects/step1.ogg"),
+                assets.load("audio/sound_effects/step2.ogg"),
+                assets.load("audio/sound_effects/step3.ogg"),
+                assets.load("audio/sound_effects/step4.ogg"),
+            ],
+        }
+    }
+}
+
+#[derive(Resource, Asset, Clone, Reflect)]
+#[reflect(Resource)]
+pub struct ShipAssets {
+    #[dependency]
+    pub fighter_base: Handle<Image>,
+    #[dependency]
+    pub fighter_engine_effect_sheet: Handle<Image>,
+}
+impl FromWorld for ShipAssets {
+    fn from_world(world: &mut World) -> Self {
+        let assets = world.resource::<AssetServer>();
+        Self {
+            fighter_base: assets.load_with_settings(
+                "images/Fighter - Base.png",
+                |settings: &mut ImageLoaderSettings| {
+                    // Use `nearest` image sampling to preserve pixel art style.
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
+            fighter_engine_effect_sheet: assets.load_with_settings(
+                "images/Fighter - Engine.png",
+                |settings: &mut ImageLoaderSettings| {
+                    // Use `nearest` image sampling to preserve pixel art style.
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
+        }
+    }
+}
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<Player>();
@@ -48,7 +104,7 @@ pub(super) fn plugin(app: &mut App) {
 }
 
 /// The player character.
-pub fn player(
+pub fn _player(
     max_speed: f32,
     player_assets: &PlayerAssets,
     texture_atlas_layouts: &mut Assets<TextureAtlasLayout>,
@@ -80,6 +136,7 @@ pub fn player(
     )
 }
 
+// TODO: change this for ship flight model
 fn record_player_directional_input(
     input: Res<ButtonInput<KeyCode>>,
     mut controller_query: Query<&mut MovementController, With<Player>>,
@@ -109,67 +166,6 @@ fn record_player_directional_input(
     }
 }
 
-#[derive(Resource, Asset, Clone, Reflect)]
-#[reflect(Resource)]
-pub struct PlayerAssets {
-    #[dependency]
-    ducky: Handle<Image>,
-    #[dependency]
-    pub steps: Vec<Handle<AudioSource>>,
-}
-
-impl FromWorld for PlayerAssets {
-    fn from_world(world: &mut World) -> Self {
-        let assets = world.resource::<AssetServer>();
-        Self {
-            ducky: assets.load_with_settings(
-                "images/ducky.png",
-                |settings: &mut ImageLoaderSettings| {
-                    // Use `nearest` image sampling to preserve pixel art style.
-                    settings.sampler = ImageSampler::nearest();
-                },
-            ),
-            steps: vec![
-                assets.load("audio/sound_effects/step1.ogg"),
-                assets.load("audio/sound_effects/step2.ogg"),
-                assets.load("audio/sound_effects/step3.ogg"),
-                assets.load("audio/sound_effects/step4.ogg"),
-            ],
-        }
-    }
-}
-
-#[derive(Resource, Asset, Clone, Reflect)]
-#[reflect(Resource)]
-pub struct ShipAssets {
-    #[dependency]
-    pub fighter_base: Handle<Image>,
-    #[dependency]
-    pub fighter_engine_effect_sheet: Handle<Image>,
-}
-
-impl FromWorld for ShipAssets {
-    fn from_world(world: &mut World) -> Self {
-        let assets = world.resource::<AssetServer>();
-        Self {
-            fighter_base: assets.load_with_settings(
-                "images/Fighter - Base.png",
-                |settings: &mut ImageLoaderSettings| {
-                    // Use `nearest` image sampling to preserve pixel art style.
-                    settings.sampler = ImageSampler::nearest();
-                },
-            ),
-            fighter_engine_effect_sheet: assets.load_with_settings(
-                "images/Fighter - Engine.png",
-                |settings: &mut ImageLoaderSettings| {
-                    // Use `nearest` image sampling to preserve pixel art style.
-                    settings.sampler = ImageSampler::nearest();
-                },
-            ),
-        }
-    }
-}
-
 pub fn fighter_ship(
     ship_assets: &Res<ShipAssets>,
     texture_atlas_layouts: &mut Assets<TextureAtlasLayout>,
@@ -188,8 +184,8 @@ pub fn fighter_ship(
         },
         ScreenWrap,
         ShipSpeed(SHIP_SPEED),
+        RotationSpeed(f32::to_radians(ROTATION_SPEED)),
         Collider::capsule(8.0, 12.0),
-        // Transform::from_xyz(0.0, 0.0, 10.0).with_scale(Vec3::splat(1.6)),
         Transform::from_scale(Vec2::splat(1.6).extend(1.0)),
         children![
             (

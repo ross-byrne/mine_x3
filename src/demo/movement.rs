@@ -13,9 +13,8 @@
 //! purposes. If you want to move the player in a smoother way,
 //! consider using a [fixed timestep](https://github.com/bevyengine/bevy/blob/main/examples/movement/physics_in_fixed_timestep.rs).
 
-use bevy::{prelude::*, window::PrimaryWindow};
-
 use crate::{AppSystems, PausableSystems, camera::CursorPositionQuery, demo::player::Player};
+use bevy::{prelude::*, window::PrimaryWindow};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<MovementController>();
@@ -29,6 +28,10 @@ pub(super) fn plugin(app: &mut App) {
             .in_set(PausableSystems),
     );
 }
+
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+pub struct ScreenWrap;
 
 /// These are the movement parameters for our character controller.
 /// For now, this is only used for a single player, but it could power NPCs or
@@ -53,6 +56,12 @@ impl Default for MovementController {
         }
     }
 }
+
+#[derive(Component)]
+pub struct ShipSpeed(pub f32);
+
+#[derive(Component, Debug)]
+pub struct RotationSpeed(pub f32);
 
 fn apply_movement(
     time: Res<Time>,
@@ -116,10 +125,6 @@ fn apply_player_rotation(
     // Rotate the player to face the cursor
     player_transform.rotate_z(rotation_angle);
 }
-
-#[derive(Component, Reflect)]
-#[reflect(Component)]
-pub struct ScreenWrap;
 
 fn apply_screen_wrap(
     window: Single<&Window, With<PrimaryWindow>>,
