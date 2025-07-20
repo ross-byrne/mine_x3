@@ -98,12 +98,12 @@ fn apply_player_movement(
         controller,
         transform,
         mut linear_velocity,
-        mut angular_velocity,
+        angular_velocity,
         ship_speed,
         rotation_speed,
     ) in query.iter_mut()
     {
-        let mut default_rotation_factor = 0.0;
+        let default_rotation_factor = 0.0;
         let mut movement_factor = 0.0;
 
         // let velocity = controller.max_speed * controller.intent;
