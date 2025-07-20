@@ -168,11 +168,15 @@ fn record_player_directional_input(
 // TODO: wire this up
 fn player_weapon_controls(
     player: Single<Entity, With<Player>>,
-    keyboard_input: Res<ButtonInput<MouseButton>>,
+    mouse_input: Res<ButtonInput<MouseButton>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     mut fire_weapon: EventWriter<FireWeapon>,
 ) {
-    // only fire weapon if holding right mouse when clicking left
-    if keyboard_input.pressed(MouseButton::Right) && keyboard_input.pressed(MouseButton::Left) {
+    // only fire weapon if holding right mouse and then clicking left mouse
+    // or hitting the spacebar
+    if mouse_input.pressed(MouseButton::Right)
+        && (mouse_input.pressed(MouseButton::Left) || keyboard_input.pressed(KeyCode::Space))
+    {
         fire_weapon.write(FireWeapon { entity: *player });
     }
 }
