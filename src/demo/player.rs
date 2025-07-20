@@ -1,5 +1,6 @@
 //! Player-specific behavior.
 
+use super::weapon::{FireWeapon, Weapon};
 use crate::{
     AppSystems, PausableSystems,
     asset_tracking::LoadResource,
@@ -13,8 +14,6 @@ use bevy::{
     image::{ImageLoaderSettings, ImageSampler},
     prelude::*,
 };
-
-use super::weapon::FireWeapon;
 
 const SHIP_SPEED: f32 = 320.0;
 const ROTATION_SPEED: f32 = 360.0;
@@ -64,25 +63,22 @@ pub struct ShipAssets {
     pub fighter_base: Handle<Image>,
     #[dependency]
     pub fighter_engine_effect_sheet: Handle<Image>,
+    #[dependency]
+    pub projectile: Handle<Image>,
 }
 impl FromWorld for ShipAssets {
     fn from_world(world: &mut World) -> Self {
         let assets = world.resource::<AssetServer>();
+        let settings = |settings: &mut ImageLoaderSettings| {
+            // Use `nearest` image sampling to preserve pixel art style.
+            settings.sampler = ImageSampler::nearest();
+        };
+
         Self {
-            fighter_base: assets.load_with_settings(
-                "images/Fighter - Base.png",
-                |settings: &mut ImageLoaderSettings| {
-                    // Use `nearest` image sampling to preserve pixel art style.
-                    settings.sampler = ImageSampler::nearest();
-                },
-            ),
-            fighter_engine_effect_sheet: assets.load_with_settings(
-                "images/Fighter - Engine.png",
-                |settings: &mut ImageLoaderSettings| {
-                    // Use `nearest` image sampling to preserve pixel art style.
-                    settings.sampler = ImageSampler::nearest();
-                },
-            ),
+            fighter_base: assets.load_with_settings("images/Fighter - Base.png", settings),
+            fighter_engine_effect_sheet: assets
+                .load_with_settings("images/Fighter - Engine.png", settings),
+            projectile: assets.load_with_settings("images/circle.png", settings),
         }
     }
 }
@@ -99,7 +95,7 @@ pub(super) fn plugin(app: &mut App) {
     // Record directional input as movement controls.
     app.add_systems(
         Update,
-        record_player_directional_input
+        (record_player_directional_input, player_weapon_controls)
             .in_set(AppSystems::RecordInput)
             .in_set(PausableSystems),
     );
@@ -172,10 +168,11 @@ fn record_player_directional_input(
 // TODO: wire this up
 fn player_weapon_controls(
     player: Single<Entity, With<Player>>,
-    keyboard_input: Res<ButtonInput<KeyCode>>,
+    keyboard_input: Res<ButtonInput<MouseButton>>,
     mut fire_weapon: EventWriter<FireWeapon>,
 ) {
-    if keyboard_input.pressed(KeyCode::Space) {
+    // only fire weapon if holding right mouse when clicking left
+    if keyboard_input.pressed(MouseButton::Right) && keyboard_input.pressed(MouseButton::Left) {
         fire_weapon.write(FireWeapon { entity: *player });
     }
 }
@@ -197,6 +194,7 @@ pub fn fighter_ship(
             ..default()
         },
         ScreenWrap,
+        Weapon::new(),
         ShipSpeed(SHIP_SPEED),
         RotationSpeed(f32::to_radians(ROTATION_SPEED)),
         Collider::capsule(8.0, 12.0),

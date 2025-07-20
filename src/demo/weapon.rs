@@ -1,3 +1,4 @@
+use super::player::ShipAssets;
 use crate::{AppSystems, PausableSystems, screens::Screen};
 use avian2d::prelude::*;
 use bevy::prelude::*;
@@ -36,7 +37,9 @@ pub(super) fn plugin(app: &mut App) {
             (tick_weapon_cooldown, tick_projectile_timers)
                 .chain()
                 .in_set(AppSystems::TickTimers),
-            fire_weapon.in_set(AppSystems::RecordInput),
+            fire_weapon
+                .run_if(resource_exists::<ShipAssets>)
+                .in_set(AppSystems::RecordInput),
             despawn_projectile.in_set(AppSystems::Update),
         )
             .in_set(PausableSystems),
@@ -60,7 +63,7 @@ fn tick_projectile_timers(mut query: Query<&mut Projectile, With<Projectile>>, t
 fn fire_weapon(
     mut commands: Commands,
     mut weapons: Query<(&Transform, &mut Weapon)>,
-    // image_assets: Res<ImageAssets>,
+    ship_assets: Res<ShipAssets>,
     mut weapon_fired: EventReader<FireWeapon>,
 ) {
     for event in weapon_fired.read() {
@@ -89,7 +92,7 @@ fn fire_weapon(
                 Collider::circle(100.0),
                 MassPropertiesBundle::from_shape(&Collider::circle(100.0), 1.0),
                 Sensor,
-                // Sprite::from_image(image_assets.projectile.clone()),
+                Sprite::from_image(ship_assets.projectile.clone()),
                 Transform::from_translation(transform_vec).with_scale(Vec3::splat(0.03)),
                 Projectile {
                     despawn_timer: Timer::from_seconds(
