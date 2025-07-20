@@ -14,6 +14,8 @@ use bevy::{
     prelude::*,
 };
 
+use super::weapon::FireWeapon;
+
 const SHIP_SPEED: f32 = 320.0;
 const ROTATION_SPEED: f32 = 360.0;
 const POWERED_ANIMATION_INDICES: AnimationIndices = AnimationIndices { first: 0, last: 7 };
@@ -163,6 +165,18 @@ fn record_player_directional_input(
     // Apply movement intent to controllers.
     for mut controller in &mut controller_query {
         controller.intent = intent;
+    }
+}
+
+// trigger event to fire weapon
+// TODO: wire this up
+fn player_weapon_controls(
+    player: Single<Entity, With<Player>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    mut fire_weapon: EventWriter<FireWeapon>,
+) {
+    if keyboard_input.pressed(KeyCode::Space) {
+        fire_weapon.write(FireWeapon { entity: *player });
     }
 }
 
