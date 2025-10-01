@@ -1,8 +1,7 @@
 //! The main menu (seen on the title screen).
 
-use bevy::prelude::*;
-
 use crate::{asset_tracking::ResourceHandles, menus::Menu, screens::Screen, theme::widget};
+use bevy::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Menu::Main), spawn_main_menu);
@@ -12,7 +11,7 @@ fn spawn_main_menu(mut commands: Commands) {
     commands.spawn((
         widget::ui_root("Main Menu"),
         GlobalZIndex(2),
-        StateScoped(Menu::Main),
+        DespawnOnExit(Menu::Main),
         #[cfg(not(target_family = "wasm"))]
         children![
             widget::button("Play", enter_loading_or_gameplay_screen),
@@ -30,7 +29,7 @@ fn spawn_main_menu(mut commands: Commands) {
 }
 
 fn enter_loading_or_gameplay_screen(
-    _: Trigger<Pointer<Click>>,
+    _: On<Pointer<Click>>,
     resource_handles: Res<ResourceHandles>,
     mut next_screen: ResMut<NextState<Screen>>,
 ) {
@@ -41,15 +40,15 @@ fn enter_loading_or_gameplay_screen(
     }
 }
 
-fn open_settings_menu(_: Trigger<Pointer<Click>>, mut next_menu: ResMut<NextState<Menu>>) {
+fn open_settings_menu(_: On<Pointer<Click>>, mut next_menu: ResMut<NextState<Menu>>) {
     next_menu.set(Menu::Settings);
 }
 
-fn open_credits_menu(_: Trigger<Pointer<Click>>, mut next_menu: ResMut<NextState<Menu>>) {
+fn open_credits_menu(_: On<Pointer<Click>>, mut next_menu: ResMut<NextState<Menu>>) {
     next_menu.set(Menu::Credits);
 }
 
 #[cfg(not(target_family = "wasm"))]
-fn exit_app(_: Trigger<Pointer<Click>>, mut app_exit: EventWriter<AppExit>) {
+fn exit_app(_: On<Pointer<Click>>, mut app_exit: MessageWriter<AppExit>) {
     app_exit.write(AppExit::Success);
 }

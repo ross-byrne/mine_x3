@@ -8,7 +8,7 @@ const PROJECTILE_FORWARD_SPAWN_SCALAR: f32 = 30.0;
 const PROJECTILE_DESPAWN_TIME_SECONDS: f32 = 2.0;
 const WEAPON_FIRE_RATE: f32 = 0.16;
 
-#[derive(Event)]
+#[derive(Message)]
 pub struct FireWeapon {
     pub entity: Entity,
 }
@@ -31,7 +31,7 @@ pub struct Projectile {
 }
 
 pub(super) fn plugin(app: &mut App) {
-    app.add_event::<FireWeapon>().add_systems(
+    app.add_message::<FireWeapon>().add_systems(
         Update,
         (
             (tick_weapon_cooldown, tick_projectile_timers)
@@ -64,7 +64,7 @@ fn fire_weapon(
     mut commands: Commands,
     mut weapons: Query<(&Transform, &mut Weapon)>,
     ship_assets: Res<ShipAssets>,
-    mut weapon_fired: EventReader<FireWeapon>,
+    mut weapon_fired: MessageReader<FireWeapon>,
 ) {
     for event in weapon_fired.read() {
         let trigger_entity = event.entity;
@@ -75,7 +75,7 @@ fn fire_weapon(
         };
 
         // check if weapon timer is finished
-        if weapon.fire_rate_timer.finished() {
+        if weapon.fire_rate_timer.is_finished() {
             // reset timer
             weapon.fire_rate_timer = Timer::from_seconds(WEAPON_FIRE_RATE, TimerMode::Once);
 
@@ -86,7 +86,7 @@ fn fire_weapon(
             let linear_velocity: Vec3 = transform.up() * PROJECTILE_SPEED;
 
             commands.spawn((
-                StateScoped(Screen::Gameplay),
+                DespawnOnExit(Screen::Gameplay),
                 RigidBody::Dynamic,
                 LinearVelocity(linear_velocity.xy()),
                 Collider::circle(100.0),
