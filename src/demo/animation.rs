@@ -4,13 +4,6 @@
 //! - [Sprite animation](https://github.com/bevyengine/bevy/blob/latest/examples/2d/sprite_animation.rs)
 //! - [Timers](https://github.com/bevyengine/bevy/blob/latest/examples/time/timers.rs)
 
-use bevy::{
-    input::common_conditions::{input_just_pressed, input_just_released},
-    prelude::*,
-};
-use rand::prelude::*;
-use std::time::Duration;
-
 use crate::{
     AppSystems, PausableSystems,
     audio::sound_effect,
@@ -19,6 +12,12 @@ use crate::{
         player::{PlayerAssets, PlayerShipEngineEffect},
     },
 };
+use bevy::{
+    input::common_conditions::{input_just_pressed, input_just_released},
+    prelude::*,
+};
+use rand::prelude::*;
+use std::time::Duration;
 
 pub(super) fn plugin(app: &mut App) {
     // Animate and play sound effects based on controls.
@@ -106,7 +105,7 @@ fn trigger_step_sound_effect(
             && animation.changed()
             && (animation.frame == 2 || animation.frame == 5)
         {
-            let rng = &mut rand::thread_rng();
+            let rng = &mut rand::rng();
             let random_step = player_assets.steps.choose(rng).unwrap().clone();
             commands.spawn(sound_effect(random_step));
         }
@@ -163,7 +162,7 @@ impl PlayerAnimation {
     /// Update animation timers.
     pub fn update_timer(&mut self, delta: Duration) {
         self.timer.tick(delta);
-        if !self.timer.finished() {
+        if !self.timer.is_finished() {
             return;
         }
         self.frame = (self.frame + 1)
@@ -185,7 +184,7 @@ impl PlayerAnimation {
 
     /// Whether animation changed this tick.
     pub fn changed(&self) -> bool {
-        self.timer.finished()
+        self.timer.is_finished()
     }
 
     /// Return sprite index in the atlas.

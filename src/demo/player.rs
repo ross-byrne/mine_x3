@@ -170,7 +170,7 @@ fn player_weapon_controls(
     player: Single<Entity, With<Player>>,
     mouse_input: Res<ButtonInput<MouseButton>>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut fire_weapon: EventWriter<FireWeapon>,
+    mut fire_weapon: MessageWriter<FireWeapon>,
 ) {
     // only fire weapon if holding right mouse and then clicking left mouse
     // or hitting the spacebar
