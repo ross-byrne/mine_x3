@@ -6,10 +6,10 @@ edition = "2024"
 [dependencies]
 bevy = { version = "0.17", features = ["wayland"] }
 
-# avian2d = "0.3"
-avian2d = { git = "https://github.com/Jondolf/avian", branch = "main" }
+avian2d = "0.4"
 
 rand = "0.9"
+
 # Compile low-severity logs out of native builds for performance.
 log = { version = "0.4", features = [
     "max_level_debug",
@@ -23,29 +23,29 @@ dev = [
     # Improve compile times for dev builds by linking Bevy as a dynamic library.
     "bevy/dynamic_linking",
     "bevy/bevy_dev_tools",
-    "bevy/bevy_ui_debug",
+    # "bevy/bevy_ui_debug",
     # Improve error messages coming from Bevy
-    "bevy/track_location",
+    # "bevy/track_location",
 ]
 dev_native = [
     "dev",
     # Enable asset hot reloading for native dev builds.
-    "bevy/file_watcher",
+    # "bevy/file_watcher",
     # Enable embedded asset hot reloading for native dev builds.
-    "bevy/embedded_watcher",
+    # "bevy/embedded_watcher",
 ]
 
 
-[package.metadata.bevy_cli.release]
+# [package.metadata.bevy_cli.release]
 # Disable dev features for release builds.
-default-features = false
+# default-features = false
 
-[package.metadata.bevy_cli.web]
+# [package.metadata.bevy_cli.web]
 # Disable native features for web builds.
-default-features = false
+# default-features = false
 
-[package.metadata.bevy_cli.web.dev]
-features = ["dev"]
+# [package.metadata.bevy_cli.web.dev]
+# features = ["dev"]
 
 
 [lints.rust]
@@ -63,10 +63,9 @@ nonstandard_macro_braces = "warn"
 
 # You can configure the warning levels of Bevy lints here. For a list of all lints, see:
 # <https://thebevyflock.github.io/bevy_cli/bevy_lint/lints/>
-[package.metadata.bevy_lint]
+# [package.metadata.bevy_lint]
 # panicking_methods = "deny"
 # pedantic = "warn"
-
 
 # Compile with Performance Optimizations:
 # <https://bevyengine.org/learn/quick-start/getting-started/setup/#compile-with-performance-optimizations>
@@ -90,16 +89,6 @@ codegen-units = 1
 # Do a second optimization pass over the entire program, including dependencies.
 # Slows compile times, marginal improvements.
 lto = "thin"
-
-# This profile will be used by `bevy run web` automatically.
-[profile.web-release]
-# Default to release profile values.
-inherits = "release"
-# Optimize with size in mind (also try "z", sometimes it is better).
-# Slightly slows compile times, great improvements to file size and runtime performance.
-opt-level = "s"
-# Strip all debugging information from the binary to slightly reduce file size.
-strip = "debuginfo"
 
 # Optimize for build time in CI.
 [profile.ci]
